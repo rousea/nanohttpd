@@ -47,6 +47,7 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -87,6 +88,8 @@ public class HTTPSession implements IHTTPSession {
 
     private final ITempFileManager tempFileManager;
 
+    private final Socket acceptSocket;
+
     private final OutputStream outputStream;
 
     private final BufferedInputStream inputStream;
@@ -113,16 +116,18 @@ public class HTTPSession implements IHTTPSession {
 
     private String protocolVersion;
 
-    public HTTPSession(NanoHTTPD httpd, ITempFileManager tempFileManager, InputStream inputStream, OutputStream outputStream) {
+    public HTTPSession(NanoHTTPD httpd, ITempFileManager tempFileManager, Socket acceptSocket, InputStream inputStream, OutputStream outputStream) {
         this.httpd = httpd;
         this.tempFileManager = tempFileManager;
+        this.acceptSocket = acceptSocket;
         this.inputStream = new BufferedInputStream(inputStream, HTTPSession.BUFSIZE);
         this.outputStream = outputStream;
     }
 
-    public HTTPSession(NanoHTTPD httpd, ITempFileManager tempFileManager, InputStream inputStream, OutputStream outputStream, InetAddress inetAddress) {
+    public HTTPSession(NanoHTTPD httpd, ITempFileManager tempFileManager, Socket acceptSocket, InputStream inputStream, OutputStream outputStream, InetAddress inetAddress) {
         this.httpd = httpd;
         this.tempFileManager = tempFileManager;
+        this.acceptSocket = acceptSocket;
         this.inputStream = new BufferedInputStream(inputStream, HTTPSession.BUFSIZE);
         this.outputStream = outputStream;
         this.remoteIp = inetAddress.isLoopbackAddress() || inetAddress.isAnyLocalAddress() ? "127.0.0.1" : inetAddress.getHostAddress().toString();
@@ -449,14 +454,17 @@ public class HTTPSession implements IHTTPSession {
             Response resp = Response.newFixedLengthResponse(Status.INTERNAL_ERROR, NanoHTTPD.MIME_PLAINTEXT, "SSL PROTOCOL FAILURE: " + ssle.getMessage());
             resp.send(this.outputStream);
             NanoHTTPD.safeClose(this.outputStream);
+            NanoHTTPD.safeClose(this.acceptSocket);
         } catch (IOException ioe) {
             Response resp = Response.newFixedLengthResponse(Status.INTERNAL_ERROR, NanoHTTPD.MIME_PLAINTEXT, "SERVER INTERNAL ERROR: IOException: " + ioe.getMessage());
             resp.send(this.outputStream);
             NanoHTTPD.safeClose(this.outputStream);
+            NanoHTTPD.safeClose(this.acceptSocket);
         } catch (ResponseException re) {
             Response resp = Response.newFixedLengthResponse(re.getStatus(), NanoHTTPD.MIME_PLAINTEXT, re.getMessage());
             resp.send(this.outputStream);
             NanoHTTPD.safeClose(this.outputStream);
+            NanoHTTPD.safeClose(this.acceptSocket);
         } finally {
             NanoHTTPD.safeClose(r);
             this.tempFileManager.clear();

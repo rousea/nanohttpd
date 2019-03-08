@@ -70,7 +70,7 @@ public class ClientHandler implements Runnable {
         try {
             outputStream = this.acceptSocket.getOutputStream();
             ITempFileManager tempFileManager = httpd.getTempFileManagerFactory().create();
-            HTTPSession session = new HTTPSession(httpd, tempFileManager, this.inputStream, outputStream, this.acceptSocket.getInetAddress());
+            HTTPSession session = new HTTPSession(httpd, tempFileManager, this.acceptSocket, this.inputStream, outputStream, this.acceptSocket.getInetAddress());
             while (!this.acceptSocket.isClosed()) {
                 session.execute();
             }
