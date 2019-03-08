@@ -377,7 +377,7 @@ public class HTTPSession implements IHTTPSession {
                 read = this.inputStream.read(buf, this.rlen, HTTPSession.BUFSIZE - this.rlen);
             }
 
-            if (this.splitbyte < this.rlen) {
+            if (this.splitbyte < this.rlen && splitbyte != 0) {
                 this.inputStream.reset();
                 this.inputStream.skip(this.splitbyte);
             }
